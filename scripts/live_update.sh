@@ -11,7 +11,7 @@ done
 FIN=$(for d in "$RUNS"/*/; do if [ -f "$d/results.jsonl" ]; then echo "../${d%/}"; fi; done)
 echo "finished runs:" $FIN
 cd cacheboard-kit
-python3 -m cacheboard.episodes --runs $FIN --rahul ../results/e0_rahul_raw/run_1794135757 --out ../results/e2_live > /dev/null
+python3 -m cacheboard.episodes --runs $FIN --out ../results/e2_live > /dev/null
 for src in harness agent; do
   python3 -m cacheboard.replay --runs $FIN --out ../results/e3_replay_$src --seeds 3 --transcript $src | tail -1
 done

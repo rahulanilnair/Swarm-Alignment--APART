@@ -61,4 +61,6 @@ Andrii Boiko, Rahul Anil Nair, Valentin Pilhofer, Onurcan Genç, Samrudh, Syakir
 
 ## Licence
 
-MIT (see `LICENSE`).
+Code: MIT (see `LICENSE`). Data under `results/` that comes from live runs (`results/live_runs`,
+`results/e0_rahul_raw`, `results/e2_live`, `results/e3_*`) contains PuzzleWorld puzzles and answers and
+keeps the dataset's licence, CC BY-NC-SA 4.0.
