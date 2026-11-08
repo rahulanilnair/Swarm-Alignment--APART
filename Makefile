@@ -19,6 +19,9 @@ HELD_B :=
 E4 := results/e4_heldout_harness
 E4A := results/e4_heldout_agent
 E4N := results/e4_natural
+# E5, adaptive colluders (amendment to the pre-registration): collusion runs and the plain runs with the same seeds
+COLLUDE_RUNS := $(wildcard $(RUNS)/collude-s*)
+E5 := results/e5_collude
 E4B := results/e4b_heldout_harness
 E4BA := results/e4b_heldout_agent
 # Add an LLM monitor here only once its predictions cover every episode (see results/*/log_*.txt).
@@ -40,9 +43,10 @@ numbers:
 	cd cacheboard-kit && $(PYTHON) -m cacheboard.score --run ../$(E1) --rules --derive
 	cd cacheboard-kit && $(PYTHON) -m cacheboard.score --run ../$(E1) --merge --only cross_actor_rule_v1 consistency_v1 cross_or_consistency_v1 $(LLM_E1) $(addsuffix +verify,$(LLM_E1))
 	cd analysis && uv run python analyze.py --run ../$(E1) --manuscript ../manuscript --table-monitors $(HEATMAP) > /dev/null
-	for d in $(E3) $(E3A) $(E4) $(E4A) $(E4N) $(if $(HELD_B),$(E4B) $(E4BA)) $(E2) $(E2DEV) $(E2GLM); do (cd cacheboard-kit && $(PYTHON) -m cacheboard.score --run ../$$d --rules --derive > /dev/null && $(PYTHON) -m cacheboard.score --run ../$$d --merge > /dev/null); done
+	for d in $(E3) $(E3A) $(E4) $(E4A) $(E4N) $(if $(HELD_B),$(E4B) $(E4BA)) $(E2) $(E2DEV) $(E2GLM) $(if $(wildcard $(E5)/monitor_inputs),$(E5)); do (cd cacheboard-kit && $(PYTHON) -m cacheboard.score --run ../$$d --rules --derive > /dev/null && $(PYTHON) -m cacheboard.score --run ../$$d --merge > /dev/null); done
 	cd analysis && uv run python paper.py --e1 ../$(E1) --e0 ../$(E0) $(if $(wildcard $(E2)/summary.json),--e2 ../$(E2)) $(if $(wildcard $(E3)/predictions.csv),--e3 ../$(E3)) $(if $(wildcard $(E3A)/predictions.csv),--e3agent ../$(E3A)) \
-	  $(if $(wildcard $(E4A)/predictions.csv),--e4 ../$(E4) --e4agent ../$(E4A) --e4natural ../$(E4N) $(if $(HELD_B),--e4b ../$(E4B) --e4bagent ../$(E4BA)) --e2dev ../$(E2DEV) --e2glm ../$(E2GLM) --dev-runs $(addprefix ../,$(DEV_RUNS)) --heldout-runs $(addprefix ../,$(HELD_A) $(HELD_B))) \
+	  $(if $(wildcard $(E4A)/predictions.csv),--e4 ../$(E4) --e4agent ../$(E4A) --e4natural ../$(E4N) $(if $(HELD_B),--e4b ../$(E4B) --e4bagent ../$(E4BA)) --e2dev ../$(E2DEV) --e2glm ../$(E2GLM) \
+	  $(if $(COLLUDE_RUNS),--collude-runs $(addprefix ../,$(foreach r,$(COLLUDE_RUNS),$(if $(wildcard $(r)/results.jsonl),$(r)))) --plain-runs $(addprefix ../,$(wildcard $(RUNS)/main-s*)) --e5 ../$(E5)) --dev-runs $(addprefix ../,$(DEV_RUNS)) --heldout-runs $(addprefix ../,$(HELD_A) $(HELD_B))) \
 	  --manuscript ../manuscript --monitors $(MONITORS)
 
 heldout-build:  ## rebuild the E4 episodes from the stored live runs (no model calls)
