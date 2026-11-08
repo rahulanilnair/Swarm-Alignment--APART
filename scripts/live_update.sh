@@ -8,7 +8,7 @@ RUNS=results/live_runs
 for h in spark-office-7 spark-office-8 spark-office-5; do
   rsync -a --exclude 'smoke-*' "$h:swarm-hackathon/runs/" "$RUNS/" 2>/dev/null || echo "skip $h"
 done
-FIN=$(for d in "$RUNS"/*/; do [ -f "$d/results.jsonl" ] && echo "../${d%/}"; done)
+FIN=$(for d in "$RUNS"/*/; do if [ -f "$d/results.jsonl" ]; then echo "../${d%/}"; fi; done)
 echo "finished runs:" $FIN
 cd cacheboard-kit
 python3 -m cacheboard.episodes --runs $FIN --rahul ../results/e0_rahul_raw/run_1794135757 --out ../results/e2_live > /dev/null
