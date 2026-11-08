@@ -147,3 +147,56 @@ def extract_json(text):
                 if isinstance(obj, dict):
                     found = obj
     return found
+
+
+class ClaudeCLIClient(ChatClient):
+    """Claude through the local Claude Code CLI (`claude -p`), for a subscription login.
+
+    Clean call: our system prompt replaces Claude Code's, no tools, no MCP servers, no settings
+    sources (so no hooks or CLAUDE.md), no slash commands, no session persistence, an empty temp
+    working directory, and the prompt on stdin. Temperature cannot be set through the CLI.
+    The reply's usage is kept so callers can check the context really was clean."""
+
+    def __init__(self, model, effort="low", timeout=900, cache_path=None, executable="claude", config_dir=None):
+        super().__init__("claude-cli", model, key_env=None, timeout=timeout, cache_path=cache_path,
+                         extra_body={"effort": effort})
+        self.effort = effort
+        self.executable = executable
+        # A separate Claude Code profile keeps this login apart from the user's main CLI login.
+        self.config_dir = config_dir or os.environ.get("CACHEBOARD_CLAUDE_CONFIG_DIR")
+
+    def _post(self, body):
+        import subprocess
+        import tempfile
+        system = next((m["content"] for m in body["messages"] if m["role"] == "system"), "")
+        turns = [m for m in body["messages"] if m["role"] != "system"]
+        prompt = turns[-1]["content"] if len(turns) == 1 else "\n\n".join(
+            f"[{m['role']}]\n{m['content']}" for m in turns)
+        cmd = [self.executable, "-p", "--model", self.model, "--system-prompt", system,
+               "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
+               "--setting-sources", "", "--disable-slash-commands", "--no-session-persistence",
+               "--output-format", "json", "--effort", self.effort]
+        last = None
+        for attempt in range(self.max_retries + 1):
+            with tempfile.TemporaryDirectory() as cwd:
+                try:
+                    env = dict(os.environ)
+                    if self.config_dir:
+                        env["CLAUDE_CONFIG_DIR"] = os.path.expanduser(self.config_dir)
+                    run = subprocess.run(cmd, input=prompt, capture_output=True, text=True,
+                                         cwd=cwd, timeout=self.timeout, env=env)
+                    out = json.loads(run.stdout)
+                except (subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+                    last = ChatError(f"claude cli: {type(exc).__name__}: {str(exc)[:200]}")
+                else:
+                    if not out.get("is_error"):
+                        usage = out.get("usage") or {}
+                        return {"choices": [{"message": {"content": out.get("result") or ""},
+                                             "finish_reason": out.get("stop_reason")}],
+                                "usage": usage, "model": next(iter(out.get("modelUsage") or {self.model: 0}))}
+                    last = ChatError(f"claude cli error: {str(out.get('result'))[:300]}")
+                    if "disabled" in str(out.get("result")) or "login" in str(out.get("result")).lower():
+                        raise last
+            if attempt < self.max_retries:
+                time.sleep(min(60, 2 ** attempt) * (0.5 + random.random()))
+        raise last
