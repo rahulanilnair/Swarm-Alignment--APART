@@ -341,10 +341,16 @@ def h3_templates(run, ms, monitors, target):  # sketch, untested under pandas; l
 
 ## 9. Other observations, outside the review's scope
 
-- `andrii/integration` and `main` contain the raw first-run files with full reasoning traces and puzzle
-  answers: `run_1794135757_*` at the root (925b469) and `results/e0_rahul_raw/`. `cacheboard-kit/CLAUDE.md`
-  says raw private logs stay out of Git. This is a team decision before the repository goes public.
-- The committed `agent-runner.py` does not compile (section 5d); deleting the four pasted lines fixes it.
+- The raw first run sits in two places. `run_1794135757_*` at the repository root (added in 925b469) is on
+  `main`, `andrii/integration`, `agent_runner_update`, `valentin/stats` and this branch. The copy in
+  `results/e0_rahul_raw/` is on `andrii/integration`, `valentin/stats` and this branch, not on `main`.
+  The results file holds reasoning traces in all 90 steps and the correct answers to 3 puzzles; 21 board
+  values contain a correct answer; the meta file holds no answers. `cacheboard-kit/CLAUDE.md` says raw
+  private logs stay out of Git. Deleting the files leaves them in history, so the team should decide on
+  scrubbing before the repository goes public. (Checked on 8 November after fetching every branch.)
+- The committed `agent-runner.py` did not compile (section 5d). Rahul's 5d0f3a1 deletes the four pasted
+  lines and was merged into `main` as 6ee02a8; `andrii/integration` still has the broken copy until it
+  merges `main`.
 - `real_run/REPORT.md` predates the meta file and the runner commit; its "inferred" markers and the open
   question on the model can now be resolved (section 5d).
 
