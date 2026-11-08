@@ -116,7 +116,17 @@ def e1(run, numbers, manuscript, monitors, target):
                 sub = held[held.condition == cond]
                 if len(sub):
                     numbers.add(f"{key}{macro_name(cond)}Mean", float(sub.score.mean()))
-    return pd.DataFrame(rows), pd.DataFrame(group_rows)
+    groups = pd.DataFrame(group_rows)
+    llm = groups[groups.monitor.str.match(r"^(claude|glm|qwen)") & ~groups.monitor.str.endswith("+verify")]
+    for g in GROUPS:
+        for view in VIEWS:
+            sub = llm[(llm.group == g) & (llm.view == view)]
+            if len(sub):
+                rates = [r[0] for r in sub.rate]
+                tag = f"Llm{VIEW_SHORT[view].replace('+', 'R')}{macro_name(g)}"
+                numbers.add(f"{tag}MinPct", min(rates) * 100, "{:.0f}")
+                numbers.add(f"{tag}MaxPct", max(rates) * 100, "{:.0f}")
+    return pd.DataFrame(rows), groups
 
 
 def pretty(mon):

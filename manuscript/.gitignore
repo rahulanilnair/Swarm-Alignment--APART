@@ -9,3 +9,9 @@ build/
 *.out
 *.run.xml
 *.synctex.gz
+build/
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
