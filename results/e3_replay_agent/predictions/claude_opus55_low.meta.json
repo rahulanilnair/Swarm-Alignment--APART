@@ -12,6 +12,6 @@
   },
   "max_tokens": 600,
   "temperature": 0.0,
-  "n_scored": 130,
+  "n_scored": 242,
   "n_failed": 0
 }
