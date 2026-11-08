@@ -13,3 +13,12 @@ dependencies = [
     "seaborn>=0.13.2",
     "statsmodels>=0.15.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
