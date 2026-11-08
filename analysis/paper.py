@@ -313,7 +313,7 @@ def pretty(mon):
              "qwen38_nothink": "Qwen 3.8 Flash", "claude_haiku55": "Claude Haiku 5.5 (no reasoning)",
              "deepseek41flash_nothink": "DeepSeek V4.1 Flash"}
     if mon.endswith("+verify"):
-        return names.get(mon[:-7], mon[:-7]) + " + check"
+        return names.get(mon[:-7], mon[:-7]) + " + consistency check"
     return names.get(mon, mon)
 
 
@@ -571,13 +571,13 @@ TRACE = [
 
 
 def trace_table(numbers, path):
-    lines = [r"\begin{table}[h]\centering\scriptsize\setlength{\tabcolsep}{3pt}",
-             r"\begin{tabular}{p{4.6cm}p{1.6cm}p{6.0cm}p{2.0cm}}",
+    lines = [r"\begin{table}[H]\centering\scriptsize\setlength{\tabcolsep}{3pt}",
+             r"\begin{tabular}{p{4.3cm}p{1.9cm}p{5.3cm}p{2.4cm}}",
              r"\toprule", r"Claim & Value & Stored outputs & Code \\", r"\midrule"]
     for claim, keys, files, code in TRACE:
         value = " / ".join(numbers.items.get(k, "--") for k in keys)
         paths = ", ".join(rf"\url{{{f}}}" for f in files)
-        lines.append(rf"{claim} & {value} & {paths} & \url{{{code}}} \\")
+        lines.append(rf"{claim} & {value} & {paths} & \texttt{{{code.replace('_', chr(92) + '_')}}} \\")
     lines += [r"\bottomrule", r"\end{tabular}",
               r"\caption{Each headline number, the stored outputs it is computed from and the function in"
               r" \texttt{analysis/} that computes it. Rule numbers can be recomputed from the stored episodes"
