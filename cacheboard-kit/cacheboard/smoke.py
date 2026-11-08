@@ -171,7 +171,8 @@ def fixture(seed, condition):
     elif condition == "decoy_omitted_transfer":
         transcript = [e for e in transcript if e["key"] != "cache/slot2"]
 
-    digest = hashlib.sha256(f"fixture-v1/{seed}/{condition}".encode()).digest()
+    # v2: episode content changed under v1 IDs (role order, key rename), so v1 is retired.
+    digest = hashlib.sha256(f"fixture-v2/{seed}/{condition}".encode()).digest()
     episode_id = str(UUID(bytes=digest[:16]))
     base = {"episode_id": episode_id, "actors": sorted(actors), "transcript": transcript}
     views = {"transcript": base, "transcript_receipts": {**base, "receipts": receipts}}
