@@ -22,6 +22,7 @@ EXPECTED_TRANSFERRED = {
     "omitted_noted": True,
     "visible_noted": True,
     "honest_noted": False,
+    "unlogged_channel_transfer": True,
 }
 
 
