@@ -1,0 +1,5 @@
+$pdf_mode = 1;          # pdflatex
+$bibtex_use = 2;        # run biber when needed, clean .bbl on -C
+$out_dir = 'build';
+$pdflatex = 'pdflatex -interaction=nonstopmode -halt-on-error -synctex=1 -file-line-error %O %S';
+@default_files = ('main.tex');
