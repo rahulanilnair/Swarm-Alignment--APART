@@ -1,0 +1,6 @@
+claude_haiku55_low_nowarn: 50/1080 done, 2 failed
+claude_haiku55_low_nowarn: 100/1080 done, 3 failed
+claude_haiku55_low_nowarn: 150/1080 done, 3 failed
+claude_haiku55_low_nowarn: 200/1080 done, 4 failed
+claude_haiku55_low_nowarn: 250/1080 done, 4 failed
+claude_haiku55_low_nowarn: 300/1080 done, 4 failed
