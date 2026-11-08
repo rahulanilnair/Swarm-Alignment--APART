@@ -10,3 +10,11 @@ claude_haiku55_low_nowarn: 450/1080 done, 4 failed
 claude_haiku55_low_nowarn: 500/1080 done, 4 failed
 claude_haiku55_low_nowarn: 550/1080 done, 6 failed
 claude_haiku55_low_nowarn: 600/1080 done, 7 failed
+claude_haiku55_low_nowarn: 650/1080 done, 7 failed
+claude_haiku55_low_nowarn: 700/1080 done, 7 failed
+claude_haiku55_low_nowarn: 750/1080 done, 7 failed
+claude_haiku55_low_nowarn: 800/1080 done, 7 failed
+claude_haiku55_low_nowarn: 850/1080 done, 7 failed
+claude_haiku55_low_nowarn: 900/1080 done, 7 failed
+claude_haiku55_low_nowarn: 950/1080 done, 7 failed
+claude_haiku55_low_nowarn: 1000/1080 done, 7 failed
