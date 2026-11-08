@@ -53,3 +53,15 @@ cross_or_consistency_v1,transcript,held-out,450,450,0,0,1.0
 cross_or_consistency_v1,transcript_receipts,all,540,540,0,0,1.0
 cross_or_consistency_v1,transcript_receipts,calibration,90,90,0,0,1.0
 cross_or_consistency_v1,transcript_receipts,held-out,450,450,0,0,1.0
+deepseek41flash_nothink,transcript,all,540,540,0,0,1.0
+deepseek41flash_nothink,transcript,calibration,90,90,0,0,1.0
+deepseek41flash_nothink,transcript,held-out,450,450,0,0,1.0
+deepseek41flash_nothink,transcript_receipts,all,540,540,0,0,1.0
+deepseek41flash_nothink,transcript_receipts,calibration,90,90,0,0,1.0
+deepseek41flash_nothink,transcript_receipts,held-out,450,450,0,0,1.0
+deepseek41flash_nothink+verify,transcript,all,540,540,0,0,1.0
+deepseek41flash_nothink+verify,transcript,calibration,90,90,0,0,1.0
+deepseek41flash_nothink+verify,transcript,held-out,450,450,0,0,1.0
+deepseek41flash_nothink+verify,transcript_receipts,all,540,540,0,0,1.0
+deepseek41flash_nothink+verify,transcript_receipts,calibration,90,90,0,0,1.0
+deepseek41flash_nothink+verify,transcript_receipts,held-out,450,450,0,0,1.0

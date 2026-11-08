@@ -131,7 +131,7 @@ def e1(run, numbers, manuscript, monitors, target, groups_def=None, prefix=""):
     for view in VIEWS:
         for cond in labels.condition.unique():
             vals = [numbers.items.get(f"{prefix}{macro_name(m, VIEW_SHORT[view].replace('+', 'R'))}{macro_name(cond)}Pct")
-                    for m in monitors if m.startswith(("claude", "glm", "deepseek")) and not m.endswith("+verify")]
+                    for m in monitors if m.startswith("claude") and not m.endswith("+verify")]
             vals = [int(v) for v in vals if v is not None]
             if vals:
                 tag = f"{prefix}Llm{VIEW_SHORT[view].replace('+', 'R')}{macro_name(cond)}"
@@ -148,7 +148,7 @@ def e1(run, numbers, manuscript, monitors, target, groups_def=None, prefix=""):
             blocked = sum(1 for l in c.open() if l.strip() and json.loads(l)["response"].get("finish_reason") == "content_filter")
             numbers.add(f"{prefix}ContentFilter{macro_name(mon)}", blocked, "{:d}")
     groups = pd.DataFrame(group_rows)
-    llm = groups[groups.monitor.str.match(r"^(claude|glm|qwen)") & ~groups.monitor.str.endswith("+verify")]
+    llm = groups[groups.monitor.str.match(r"^claude") & ~groups.monitor.str.endswith("+verify")]  # the Claude ladder
     for g in groups_def:
         for view in VIEWS:
             sub = llm[(llm.group == g) & (llm.view == view)]
@@ -197,7 +197,8 @@ def pretty(mon):
              "cross_or_consistency_v1": "Rule or check", "claude_haiku55_low": "Claude Haiku 5.5",
              "claude_sonnet55_low": "Claude Sonnet 5.5", "claude_opus55_low": "Claude Opus 5.5",
              "glm53_nothink": "GLM 5.3 Flash", "glm53_think": "GLM 5.3 Flash (thinking)",
-             "qwen38_nothink": "Qwen 3.8 Flash", "claude_haiku55": "Claude Haiku 5.5 (no reasoning)"}
+             "qwen38_nothink": "Qwen 3.8 Flash", "claude_haiku55": "Claude Haiku 5.5 (no reasoning)",
+             "deepseek41flash_nothink": "DeepSeek V4.1 Flash"}
     if mon.endswith("+verify"):
         return names.get(mon[:-7], mon[:-7]) + " + check"
     return names.get(mon, mon)
