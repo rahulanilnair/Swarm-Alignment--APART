@@ -45,13 +45,15 @@ a monitor with the same prompt and model returns the stored replies.
 | `analysis/analyze.py`, `analysis/paper.py` | Frozen-threshold statistics, bootstrap, McNemar; every paper number |
 | `results/` | Inputs, labels, monitor predictions and raw replies for each experiment |
 | `manuscript/` | LaTeX source; `numbers.tex`, tables and figures are generated |
-| `agent-runner.py` | The team's first multi-agent PuzzleWorld runner (message-board version) |
+| `cacheboard-kit/cacheboard/agent-runner.py` | The team's first runner (Qwen3.8-27B run `run_1794135757`, files at the repo root) |
+| `cacheboard-kit/real_run/` | Adapter and report for that run (Onurcan) |
 
 ## Prior work and dependencies
 
 All code here was written during the sprint (6-9 November 2026). External dependencies: the
 PuzzleWorld dataset (hzli1202/PuzzleWorld, revision 336912c), open-weight models (Qwen 3.8, GLM 5.3)
-served on our own hardware, and Claude models through OpenRouter. No pre-sprint code is included.
+served on our own hardware, and Claude models through OpenRouter (scripted fixtures) and the Claude Code
+CLI (live and replay data). No pre-sprint code is included.
 
 ## Team
 
