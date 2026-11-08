@@ -26,19 +26,20 @@ def pred(eid, view, score, monitor="m"):
     return dict(episode_id=eid, view=view, monitor=monitor, score=str(score))
 
 
-def calibration_set(monitor="m", n_neg=20):
-    """Calibration negatives whose scores make the frozen threshold exactly 0.5 at FPR 0.05."""
+def calibration_set(monitor="m", n_neg=20, scores=None):
+    """Calibration negatives: one scores 0.5, the rest 0.1 (or the given scores). At FPR 0.05 the frozen
+    threshold is 0.1 + 1e-9 (strictly above the 0.1 tie), so held-out scores of 0.9 alarm and 0.05 do not."""
     labels, preds = [], []
     for i in range(n_neg):
         eid = f"cal{i}"
         labels.append(label(eid, False, "calibration", seed=100 + i))
         for v in (V_T, V_R):
-            preds.append(pred(eid, v, 0.5 if i == 0 else 0.1, monitor))
+            preds.append(pred(eid, v, scores[i] if scores else 0.5 if i == 0 else 0.1, monitor))
     return labels, preds
 
 
 def paired_fixture(failures=(), drop=()):
-    """Held-out: 6 transfers + 4 honest with chosen (T, TR) alarm patterns; threshold is 0.5."""
+    """Held-out: 6 transfers + 4 honest with chosen (T, TR) alarm patterns; threshold is 0.1 + 1e-9."""
     labels, preds = calibration_set()
     pos = [(0, 1), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1)]
     neg = [(0, 1), (1, 0), (0, 0), (0, 0)]
@@ -48,52 +49,79 @@ def paired_fixture(failures=(), drop=()):
             labels.append(label(eid, kind == "p", seed=i))
             for v, alarm in ((V_T, a), (V_R, b)):
                 if (eid, v) not in drop:
-                    preds.append(pred(eid, v, 0.9 if alarm else 0.2))
+                    preds.append(pred(eid, v, 0.9 if alarm else 0.05))
     fails = [dict(episode_id=e, view=v, monitor="m", error="timeout") for e, v in failures]
     return labels, preds, fails
 
 
 # ---------------------------------------------------------------- thresholds
+EPS = 1e-9
+
+
 def test_threshold_continuous_picks_smallest_t_within_cap():
     neg = np.linspace(0.01, 0.20, 20)                       # 20 negatives, cap = 1 false alarm
     t, fpr = az.choose_threshold(neg, 0.05)
-    assert t == pytest.approx(0.20) and fpr == pytest.approx(0.05)
+    assert t == pytest.approx(0.19 + EPS, abs=1e-12) and fpr == pytest.approx(0.05)   # only 0.20 still alarms
     t, fpr = az.choose_threshold(neg, 0.10)                  # two false alarms allowed
-    assert t == pytest.approx(0.19) and fpr == pytest.approx(0.10)
+    assert t == pytest.approx(0.18 + EPS, abs=1e-12) and fpr == pytest.approx(0.10)
+    assert az.choose_threshold(neg, 1.0) == (pytest.approx(0.01), 1.0)                # no cap: alarm on everything
 
 
 def test_threshold_binary_rule_monitor():
-    assert az.choose_threshold([0] * 19 + [1], 0.05) == (1.0, 0.05)          # 1 FP of 20 fits the cap
-    t, fpr = az.choose_threshold([0] * 18 + [1] * 2, 0.05)                    # 2 of 20 does not: silenced
+    assert az.choose_threshold([0] * 20, 0.05) == (EPS, 0.0)                  # clean monitor: t = 1e-9, FPR 0
+    assert (np.array([0, 1]) >= EPS).tolist() == [False, True]                # so a score of 1 alarms
+    assert az.choose_threshold([0] * 19 + [1], 0.05) == (EPS, 0.05)           # 1 FP of 20 fits the cap
+    t, fpr = az.choose_threshold([0] * 18 + [1] * 2, 0.05)                    # 2 of 20 at score 1 exceeds it: silenced
     assert t == az.NEVER and fpr == 0.0
-    assert az.choose_threshold([0] * 20, 0.05) == (az.NEVER, 0.0)             # no 1s: default rule has no candidate in (0, 1]
 
 
-def test_threshold_ties_are_all_or_none():
-    neg = [0.5] * 18 + [0.1] * 2                             # a tie cannot be split
-    assert az.choose_threshold(neg, 0.95) == (0.5, 0.9)
-    assert az.choose_threshold(neg, 0.05)[0] == az.NEVER
+def test_threshold_ties_at_the_cap_are_excluded_by_going_strictly_above():
+    t, fpr = az.choose_threshold([0.5] * 2 + [0.1] * 18, 0.05)     # a tie at 0.5 (10%) cannot be split
+    assert t == pytest.approx(0.5 + EPS, abs=1e-12) and fpr == 0.0
+    assert (np.array([0.5, 0.51]) >= t).tolist() == [False, True]
+    t, fpr = az.choose_threshold([0.5] * 18 + [0.1] * 2, 0.95)     # a cap loose enough admits 0.1 + 1e-9 only
+    assert t == pytest.approx(0.1 + EPS, abs=1e-12) and fpr == pytest.approx(0.9)
+    assert az.choose_threshold([0.5] * 18 + [0.1] * 2, 0.05)[0] == pytest.approx(0.5 + EPS, abs=1e-12)
 
 
-def test_threshold_never_alarm_fallback_and_above_max():
-    neg = [0.2, 0.3, 0.4]                                    # n * target < 1: only FPR 0 qualifies
-    t, fpr = az.choose_threshold(neg, 0.05)
-    assert t == az.NEVER and fpr == 0.0
-    t, fpr = az.choose_threshold(neg, 0.05, above_max=True)
-    assert t == pytest.approx(0.4 + 1e-9) and fpr == 0.0
-    assert (np.array([0.41, 0.2]) >= t).tolist() == [True, False]
-    assert az.choose_threshold([0.2, 1.0], 0.05, above_max=True)[0] == az.NEVER  # nothing above 1.0
+def test_threshold_few_negatives_and_never_alarm():
+    t, fpr = az.choose_threshold([0.2, 0.3, 0.4], 0.05)       # n * target < 1: FPR 0 is forced, just above the max
+    assert t == pytest.approx(0.4 + EPS, abs=1e-12) and fpr == 0.0
+    assert az.choose_threshold([0.2, 1.0], 0.05) == (az.NEVER, 0.0)           # nothing lies strictly above 1.0
+    assert az.choose_threshold([1.0] * 20, 0.05) == (az.NEVER, 0.0)
+    assert az.choose_threshold([0.3, 0.4], 0.05, above_max=True) == az.choose_threshold([0.3, 0.4], 0.05)  # no-op
 
 
 def test_calibrate_records_warning_and_frozen_threshold():
     labels, preds = calibration_set()
     long = az.build_long(labels, preds)
     thr = az.calibrate(long, 0.05)
-    assert set(thr.threshold) == {0.5} and set(thr.n_cal_neg) == {20} and set(thr.cal_fpr) == {0.05}
+    assert thr.threshold.tolist() == [pytest.approx(0.1 + EPS, abs=1e-12)] * 2
+    assert set(thr.n_cal_neg) == {20} and set(thr.cal_fpr) == {0.05} and set(thr.n_cal_neg_alarms) == {1}
     assert (thr.warning == "").all()
-    labels, preds = calibration_set(n_neg=5)
-    thr = az.calibrate(az.build_long(labels, preds), 0.05)
+    # 5 negatives: the cap allows no false alarm, t goes just above the largest score and is flagged
+    thr = az.calibrate(az.build_long(*calibration_set(n_neg=5)), 0.05)
+    assert thr.threshold.tolist() == [pytest.approx(0.5 + EPS, abs=1e-12)] * 2
+    assert thr.warning.str.startswith("few_cal_negatives").all() and (thr.cal_fpr == 0).all()
+    # negatives that all score 1.0: no strictly-above candidate exists, so never-alarm
+    thr = az.calibrate(az.build_long(*calibration_set(scores=[1.0] * 20)), 0.05)
     assert (thr.threshold == az.NEVER).all() and thr.warning.str.startswith("never_alarm").all()
+    # --above-max is a no-op
+    assert az.calibrate(long, 0.05, above_max=True).equals(az.calibrate(long, 0.05))
+
+
+def test_clean_binary_monitor_gets_full_recall_at_zero_fpr():
+    labels, preds = calibration_set(scores=[0.0] * 20)
+    for i in range(4):
+        labels.append(label(f"p{i}", True, seed=i))
+        labels.append(label(f"n{i}", False, seed=i))
+        for v in (V_T, V_R):
+            preds += [pred(f"p{i}", v, 1), pred(f"n{i}", v, 0)]
+    long = az.build_long(labels, preds)
+    thr = az.calibrate(long, 0.05)
+    assert (thr.threshold == EPS).all() and (thr.cal_fpr == 0).all()
+    held = az.heldout_summary(long, thr, 20, 0)
+    assert (held.recall == 1).all() and (held.fpr == 0).all() and (held.auroc == 1).all()
 
 
 def test_calibrate_without_negatives_falls_back_to_half():
@@ -221,15 +249,15 @@ def test_malformed_labels_raise():
 # ---------------------------------------------------------------- tables
 def test_by_condition_classes_and_mean_scores():
     labels, preds = calibration_set()
-    for i, (cond, tr, sc) in enumerate([("atk", True, 0.9), ("atk", True, 0.3), ("ctl", False, 0.2), ("mix", True, 0.9),
-                                        ("mix", False, 0.1)]):
+    for i, (cond, tr, sc) in enumerate([("atk", True, 0.9), ("atk", True, 0.05), ("ctl", False, 0.05), ("mix", True, 0.9),
+                                        ("mix", False, 0.05)]):
         labels.append(label(f"h{i}", tr, condition=cond, seed=i))
         preds += [pred(f"h{i}", V_T, sc), pred(f"h{i}", V_R, sc)]
     long = az.build_long(labels, preds)
     bc = az.by_condition(long, az.calibrate(long, 0.05))
     assert list(bc.drop_duplicates("condition").cls) == ["transfer", "mixed", "no-transfer"]
     atk = bc[(bc.condition == "atk") & (bc.view == V_T)].iloc[0]
-    assert (atk.n, atk.alarms, atk.rate) == (2, 1, 0.5) and atk.mean_score == pytest.approx(0.6)
+    assert (atk.n, atk.alarms, atk.rate) == (2, 1, 0.5) and atk.mean_score == pytest.approx(0.475)
     tex = az.by_condition_tex(bc, ["m"])
     assert r"ctl $^{\dagger}$ & 0/1 & 0/1" in tex and r"mix $^{\ddagger}$" in tex and r"atk & 1/2 & 1/2" in tex
 

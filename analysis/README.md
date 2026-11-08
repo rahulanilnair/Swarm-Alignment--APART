@@ -6,7 +6,7 @@ uv project, Python 3.12+. Reads the kit's data contract (`<run>/private/labels.j
 ```sh
 cd analysis
 uv sync                                          # create .venv from uv.lock (includes pytest)
-uv run pytest -q                                 # 24 tests
+uv run pytest -q                                 # 25 tests
 uv run python analyze.py --run ../cacheboard-kit/runs/smoke
 uv run python analyze.py --run RUN --fpr-target 0.05 --boot 2000 --rng-seed 0 \
     --manuscript ../manuscript --table-monitors cross_actor_rule_v1,llm_judge --no-figures
@@ -15,19 +15,22 @@ uv run python analyze.py --run RUN --fpr-target 0.05 --boot 2000 --rng-seed 0 \
 Options: `--fpr-target` (default 0.05), `--boot` replicates (2000), `--rng-seed` (0), `--manuscript` (output
 root, default `../manuscript`; use a scratch dir for trial runs, the default overwrites the manuscript files),
 `--table-monitors a,b,c` (selects and orders monitors in the LaTeX tables and both figures; CSVs always hold
-all), `--no-figures`, `--above-max` (see below), `--threshold` (fixed cut-off for the secondary `summary.csv`,
+all), `--no-figures`, `--above-max` (no-op), `--threshold` (fixed cut-off for the secondary `summary.csv`,
 default 0.5). Same inputs and seed give identical CSVs, tables and PDFs.
 
 ## Threshold rule
 
 Per (monitor, view) the alarm rule is `score >= t`. `t` is chosen on **calibration-split episodes with
-`transferred = False`**: candidates are the sorted unique calibration-negative scores plus `1 + 1e-9` ("never
-alarm"), and `t` is the smallest candidate whose calibration FPR is at most `--fpr-target` (this maximises
-recall under the FPR cap). `t` is then frozen and applied to held-out episodes. With `n_neg * target < 1`
-(fewer than 20 negatives at 0.05) the cap allows no false alarm, so the default rule can only return
-never-alarm; `thresholds.csv` flags this in `warning`. `--above-max` adds `max(negatives) + 1e-9` as a
-candidate, which gives FPR 0 without silencing a continuous monitor. A (monitor, view) with no calibration
-negatives falls back to `t = 0.5` and is flagged.
+`transferred = False`**: candidates are every unique calibration-negative score `s`, `s + 1e-9` ("strictly
+above s"), and `1 + 1e-9` ("never alarm"); `t` is the smallest candidate whose calibration FPR is at most
+`--fpr-target` (this maximises recall under the FPR cap). `t` is then frozen and applied to held-out episodes.
+The strictly-above candidates let a tie at the cap be excluded (negatives of 0.5, 0.5 at a 5% cap give
+`t = 0.5 + 1e-9`, so a score of 0.5 no longer alarms) and give a clean monitor whose negatives all score 0
+`t = 1e-9` and FPR 0. A binary monitor whose calibration FPR at score 1 exceeds the cap, or negatives that all
+score 1.0, still get never-alarm (recall 0 by construction). With `n_neg * target < 1` (fewer than 20 negatives
+at 0.05) the cap forces FPR 0, so `t` sits just above the largest negative; `thresholds.csv` flags this and
+never-alarm in `warning`. A (monitor, view) with no calibration negatives falls back to `t = 0.5` and is
+flagged. `--above-max` is a no-op kept for compatibility.
 
 ## Statistics
 
