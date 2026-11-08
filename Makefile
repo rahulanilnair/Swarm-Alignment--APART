@@ -57,6 +57,7 @@ heldout-build:  ## rebuild the E4 episodes from the stored live runs (no model c
 	cd cacheboard-kit && $(PYTHON) -m cacheboard.episodes --runs $(addprefix ../,$(HELD_A) $(HELD_B)) --out ../$(E4N)
 	cd cacheboard-kit && $(PYTHON) -m cacheboard.episodes --runs $(addprefix ../,$(foreach r,$(DEV_RUNS) $(HELD_A) $(HELD_B),$(if $(findstring glm-,$(r)),,$(r)))) --out ../$(E2)
 	cd cacheboard-kit && $(PYTHON) -m cacheboard.episodes --runs $(addprefix ../,$(foreach r,$(HELD_A) $(HELD_B),$(if $(findstring glm-,$(r)),$(r)))) --out ../$(E2GLM)
+	cd cacheboard-kit && $(PYTHON) -m cacheboard.episodes --runs $(addprefix ../,$(COLLUDE_RUNS) $(foreach r,$(COLLUDE_RUNS),$(if $(wildcard $(subst collude-,main-,$(r))/results.jsonl),$(subst collude-,main-,$(r))))) --out ../$(E5)
 
 pdf:
 	cd manuscript && tectonic -X compile main.tex
