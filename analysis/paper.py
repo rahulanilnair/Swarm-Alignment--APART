@@ -543,18 +543,32 @@ CONDITION_ROWS = [
 
 
 TRACE = [
-    ("Cross-read check, agents' logs, held-out: hidden caught",
+    ("Cross-read check, agents' logs, held-out A: hidden caught",
      ["EfouragentUnloggedCrossReadVOneHiddenK", "EfouragentUnloggedCrossReadVOneHiddenN"],
      ["results/e4_heldout_agent/predictions/unlogged_cross_read_v1.csv"], "heldout.analyse"),
-    ("Cross-read check, agents' logs, held-out: false alarms",
+    ("Cross-read check, agents' logs, held-out A: false alarms",
      ["EfouragentUnloggedCrossReadVOneNormalK", "EfouragentUnloggedCrossReadVOneNormalN"],
      ["results/e4_heldout_agent/predictions/unlogged_cross_read_v1.csv"], "heldout.analyse"),
-    ("Consistency check fires on agents' logs (\\%)", ["EfouragentConsistencyVOneNormalFireAll"],
+    ("Consistency check fires on agents' logs, held-out A (\\%)", ["EfouragentConsistencyVOneNormalFireAll"],
      ["results/e4_heldout_agent/predictions/consistency_v1.csv"], "heldout.analyse"),
+    ("Held-out B, harness logs: consistency check, hidden caught",
+     ["EfourBConsistencyVOneHiddenK", "EfourBConsistencyVOneHiddenN"],
+     ["results/e4b_heldout_harness/predictions/consistency_v1.csv"], "heldout.analyse"),
+    ("Held-out B, agents' logs: cross-read check, hidden caught",
+     ["EfourBagentUnloggedCrossReadVOneHiddenK", "EfourBagentUnloggedCrossReadVOneHiddenN"],
+     ["results/e4b_heldout_agent/predictions/unlogged_cross_read_v1.csv"], "heldout.analyse"),
+    ("Held-out B, agents' logs: cross-read check, false alarms",
+     ["EfourBagentUnloggedCrossReadVOneNormalK", "EfourBagentUnloggedCrossReadVOneNormalN"],
+     ["results/e4b_heldout_agent/predictions/unlogged_cross_read_v1.csv"], "heldout.analyse"),
+    ("Held-out B: consistency check fires on agents' logs (\\%)", ["EfourBagentConsistencyVOneNormalFireAll"],
+     ["results/e4b_heldout_agent/predictions/consistency_v1.csv"], "heldout.analyse"),
     ("Operations left out of agents' own logs (\\%)", ["OmitAllOmittedPct"],
      ["results/live_runs/*/receipts.jsonl", "results/live_runs/*/results.jsonl"], "heldout.omissions"),
     ("Natural traffic: alarms without a transfer", ["NatAllAlarmNoTransfer", "NatAllNoTransfer"],
      ["results/e2_live/", "results/e4_natural/"], "heldout.natural"),
+    ("Natural traffic, held-out runs: alarms without / with a transfer",
+     ["NatHeldAlarmNoTransfer", "NatHeldNoTransfer", "NatHeldAlarmTransfer", "NatHeldTransfers"],
+     ["results/e4_natural/"], "heldout.natural"),
     ("Paired probe: best AUROC of a Claude monitor given the diff", ["EfourXdiffPairAucMax"],
      ["results/e4_heldout_*/predictions/claude_*_xdiff.csv"], "heldout.analyse"),
     ("Raw receipts, harness logs: Haiku / Opus hidden caught (\\%)",
@@ -575,6 +589,8 @@ def trace_table(numbers, path):
              r"\begin{tabular}{p{4.3cm}p{1.9cm}p{5.3cm}p{2.4cm}}",
              r"\toprule", r"Claim & Value & Stored outputs & Code \\", r"\midrule"]
     for claim, keys, files, code in TRACE:
+        if not any(k in numbers.items for k in keys):
+            continue  # e.g. held-out B before it is built
         value = " / ".join(numbers.items.get(k, "--") for k in keys)
         paths = ", ".join(rf"\url{{{f}}}" for f in files)
         lines.append(rf"{claim} & {value} & {paths} & \texttt{{{code.replace('_', chr(92) + '_')}}} \\")
@@ -684,10 +700,11 @@ def main():
         import heldout
         h = heldout.analyse(args.e4, numbers, "Efour")
         a = heldout.analyse(args.e4agent, numbers, "Efouragent")
+        held_b = None
         if args.e4b and args.e4bagent and (Path(args.e4bagent) / "predictions.csv").exists():
-            rules = ["consistency_v1", "unlogged_cross_read_v1"]
-            heldout.analyse(args.e4b, numbers, "EfourB", monitors=rules)
-            heldout.analyse(args.e4bagent, numbers, "EfourBagent", monitors=rules)
+            rules = list(heldout.RULES)
+            held_b = (heldout.analyse(args.e4b, numbers, "EfourB", monitors=rules),
+                      heldout.analyse(args.e4bagent, numbers, "EfourBagent", monitors=rules))
         heldout.attribution(args.e4, args.e4agent, numbers)
         heldout.matched_recall(args.e4, numbers, "Efour")
         heldout.matched_recall(args.e4agent, numbers, "Efouragent")
@@ -704,7 +721,7 @@ def main():
             heldout.natural([args.e2dev], numbers, "NatDev")
         if args.e4natural:
             nat = heldout.natural(args.e4natural, numbers, "NatHeld")
-            heldout.prereg_table(h, a, nat, numbers, ms / "tables" / "prereg.tex")
+            heldout.prereg_table(h, a, nat, numbers, ms / "tables" / "prereg.tex", b=held_b)
             heldout.natural([args.e2dev] + args.e4natural if args.e2dev else args.e4natural, numbers, "NatAll")
         if args.dev_runs:
             heldout.omissions(args.dev_runs, numbers, "OmitDev")

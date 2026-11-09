@@ -15,7 +15,11 @@ E3A := results/e3_replay_agent
 RUNS := results/live_runs
 DEV_RUNS := $(addprefix $(RUNS)/,main-s0 main-s1 disclosed-s0 disclosed-s1)
 HELD_A := $(addprefix $(RUNS)/,main-s2 main-s3 disclosed-s2 disclosed-s3 glm-s0)
-HELD_B :=
+# Held-out B: every further run with results.jsonl on Sparks 5, 7, 8 at Mon 9 Nov 2026 03:00 CET (file birth time,
+# checked with stat); disclosed-s20 and disclosed-s21 finished at 03:01:24 and 03:00:09 and are excluded.
+HELD_B := $(addprefix $(RUNS)/,main-s4 main-s5 main-s6 main-s7 main-s8 main-s9 main-s10 main-s11 main-s12 main-s13 main-s14 main-s15 main-s16 main-s17 \
+  disclosed-s4 disclosed-s5 disclosed-s6 disclosed-s7 disclosed-s8 disclosed-s9 disclosed-s10 disclosed-s11 disclosed-s12 disclosed-s13 disclosed-s14 disclosed-s15 disclosed-s16 disclosed-s17 disclosed-s18 disclosed-s19 \
+  glm-s1 glm-s2 glm-s3 glm-s4 glm-s5 glm-s6)
 E4 := results/e4_heldout_harness
 E4A := results/e4_heldout_agent
 E4N := results/e4_natural
