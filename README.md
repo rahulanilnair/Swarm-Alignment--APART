@@ -74,7 +74,7 @@ CLI (live and replay data). No pre-sprint code is included.
 
 ## Team
 
-Andrii Boiko, Rahul Anil Nair, Valentin Pilhofer, Onurcan Genç, Samrudh, Syakir.
+Andrii Boiko, Rahul Anil Nair, Valentin Pilhofer, Onurcan Genç, Samrudh Modalur Radha Krishna.
 
 ## Data notice
 
