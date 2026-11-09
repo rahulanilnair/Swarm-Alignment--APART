@@ -1,4 +1,4 @@
-"""Project image for the submission card (1600 x 900 PNG). Every number is read from manuscript/numbers.tex.
+"""Project image for the submission card (1600 x 900 PNG, light and dark). Every number is read from manuscript/numbers.tex.
 
     cd analysis && uv run python ../scripts/project_image.py
 """
@@ -14,8 +14,11 @@ from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch  # noqa: 
 ROOT = Path(__file__).resolve().parents[1]
 N = dict(re.findall(r"\\newcommand\{\\(\w+)\}\{([^}]*)\}", (ROOT / "manuscript" / "numbers.tex").read_text()))
 
-SURFACE, PANEL, INK, INK2, MUTED = "#1a1a19", "#242422", "#f0efec", "#c3c2b7", "#8d8c85"
-RECEIPT, TRANSCRIPT = "#3987e5", "#d95926"   # categorical slots 1 and 2 (dark mode)
+# surface, panel, panel edge, ink, secondary ink, muted ink, receipts (slot 1), transcripts (slot 2)
+THEMES = {
+    "light": ("#fcfcfb", "#f2f1ec", "#e3e1d9", "#0b0b0b", "#52514e", "#7a7974", "#2a78d6", "#eb6834"),
+    "dark": ("#1a1a19", "#242422", "#242422", "#f0efec", "#c3c2b7", "#8d8c85", "#3987e5", "#d95926"),
+}
 plt.rcParams["font.family"] = ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]
 
 
@@ -23,7 +26,10 @@ def pct(k, n):
     return 100 * int(N[k]) / int(N[n])
 
 
-def main(out=ROOT / "manuscript" / "figures" / "project_image.png"):
+def main(theme="light"):
+    global SURFACE, PANEL, EDGE, INK, INK2, MUTED, RECEIPT, TRANSCRIPT
+    SURFACE, PANEL, EDGE, INK, INK2, MUTED, RECEIPT, TRANSCRIPT = THEMES[theme]
+    out = ROOT / "manuscript" / "figures" / ("project_image.png" if theme == "light" else f"project_image_{theme}.png")
     fig = plt.figure(figsize=(16, 9), dpi=100, facecolor=SURFACE)
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, 1600)
@@ -77,7 +83,7 @@ def main(out=ROOT / "manuscript" / "figures" / "project_image.png"):
     for i, (value, line1, line2, col) in enumerate(tiles):
         y = 318 + i * 150
         ax.add_patch(FancyBboxPatch((640, y), 880, 128, boxstyle="round,pad=0,rounding_size=14",
-                                    facecolor=PANEL, edgecolor="none"))
+                                    facecolor=PANEL, edgecolor=EDGE, lw=1.2))
         ax.add_patch(FancyBboxPatch((640, y), 8, 128, boxstyle="round,pad=0,rounding_size=4",
                                     facecolor=col, edgecolor="none"))
         ax.text(675, y + 64, value, color=INK, fontsize=40, fontweight="bold", va="center")
@@ -94,4 +100,5 @@ def main(out=ROOT / "manuscript" / "figures" / "project_image.png"):
 
 
 if __name__ == "__main__":
-    main()
+    for t in THEMES:
+        main(t)
