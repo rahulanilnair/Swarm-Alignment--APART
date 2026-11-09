@@ -610,6 +610,14 @@ def add_totals(numbers, sets, stats):
                     numbers.add(f"{out}{stat}{kn}", sum(int(numbers.items[k]) for k in keys), "{:d}")
 
 
+def repo_link(path):
+    """A stored output as a GitHub link; a glob links to the directory above its first wildcard."""
+    target = path.split("*")[0]
+    if "*" in path:
+        target = target.rsplit("/", 1)[0]
+    return rf"\repo{{{target.rstrip('/')}}}{{{path}}}"
+
+
 def trace_table(numbers, path):
     lines = [r"\begin{table}[H]\centering\scriptsize\setlength{\tabcolsep}{3pt}",
              r"\begin{tabular}{p{4.3cm}p{1.9cm}p{5.3cm}p{2.4cm}}",
@@ -618,7 +626,7 @@ def trace_table(numbers, path):
         if not any(k in numbers.items for k in keys):
             continue  # e.g. held-out B before it is built
         value = " / ".join(numbers.items.get(k, "--") for k in keys)
-        paths = ", ".join(rf"\url{{{f}}}" for f in files)
+        paths = ", ".join(repo_link(f) for f in files)
         lines.append(rf"{claim} & {value} & {paths} & \texttt{{{code.replace('_', chr(92) + '_')}}} \\")
     lines += [r"\bottomrule", r"\end{tabular}",
               r"\caption{Each headline number, the stored outputs it is computed from and the function in"
